@@ -1,6 +1,10 @@
-import math, os, pickle, re
+import math, os, pickle, re, string
 from typing import Tuple, List, Dict
 
+def remove_punctuation(input):
+    for char in string.punctuation:
+        input = input.replace(char, '')
+    return input
 
 class BayesClassifier:
     """A simple BayesClassifier implementation
@@ -54,7 +58,12 @@ class BayesClassifier:
 
         # files now holds a list of the filenames
         # self.training_data_directory holds the folder name where these files are
-        
+        # print(files)
+        # for index, file_name in enumerate(files):
+        #     print(f"training on file {index} / {len(files)}")
+        #     text = self.load_file(os.path.join(self.training_data_directory, file_name))
+        #     tokens = self.tokenize(text)
+        #     print(tokens)
 
         # stored below is how you would load a file with filename given by `fName`
         # `text` here will be the literal text of the file (i.e. what you would see
@@ -221,22 +230,25 @@ class BayesClassifier:
             words - list of tokens to update frequencies of
             freqs - dictionary of frequencies to update
         """
-        # TODO: your work here
-        pass  # remove this line once you've implemented this method
+        for word in words:
+            word = remove_punctuation(word)
+            if len(word) > 0:
+                freqs[word] = freqs.get(word, 0) + 1
+        return freqs
 
 
 if __name__ == "__main__":
     # uncomment the below lines once you've implemented `train` & `classify`
-    # b = BayesClassifier()
-    # a_list_of_words = ["I", "really", "like", "this", "movie", ".", "I", "hope", \
-    #                    "you", "like", "it", "too"]
-    # a_dictionary = {}
-    # b.update_dict(a_list_of_words, a_dictionary)
-    # assert a_dictionary["I"] == 2, "update_dict test 1"
-    # assert a_dictionary["like"] == 2, "update_dict test 2"
-    # assert a_dictionary["really"] == 1, "update_dict test 3"
-    # assert a_dictionary["too"] == 1, "update_dict test 4"
-    # print("update_dict tests passed.")
+    b = BayesClassifier()
+    a_list_of_words = ["I", "really", "like", "this", "movie", ".", "I", "hope", \
+                       "you", "like", "it", "too"]
+    a_dictionary = {}
+    b.update_dict(a_list_of_words, a_dictionary)
+    assert a_dictionary["I"] == 2, "update_dict test 1"
+    assert a_dictionary["like"] == 2, "update_dict test 2"
+    assert a_dictionary["really"] == 1, "update_dict test 3"
+    assert a_dictionary["too"] == 1, "update_dict test 4"
+    print("update_dict tests passed.")
 
     # pos_denominator = sum(b.pos_freqs.values())
     # neg_denominator = sum(b.neg_freqs.values())
