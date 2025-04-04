@@ -58,12 +58,23 @@ class BayesClassifier:
 
         # files now holds a list of the filenames
         # self.training_data_directory holds the folder name where these files are
-        # print(files)
-        # for index, file_name in enumerate(files):
-        #     print(f"training on file {index} / {len(files)}")
-        #     text = self.load_file(os.path.join(self.training_data_directory, file_name))
-        #     tokens = self.tokenize(text)
-        #     print(tokens)
+        for index, file_name in enumerate(files):
+            print(f"training on file {index} / {len(files)}")
+            text = self.load_file(os.path.join(self.training_data_directory, file_name))
+            tokens = self.tokenize(text)
+
+            if file_name.startswith(self.neg_file_prefix):
+                # negative file :(
+                self.update_dict(tokens, self.neg_freqs)
+            elif file_name.startswith(self.pos_file_prefix):
+                # positive file :)
+                self.update_dict(tokens, self.pos_freqs)
+            else:
+                print("uh oh D:")
+
+        print("saving neg and pos freqs")
+        self.save_dict(self.neg_freqs, self.neg_filename)
+        self.save_dict(self.pos_freqs, self.pos_filename)
 
         # stored below is how you would load a file with filename given by `fName`
         # `text` here will be the literal text of the file (i.e. what you would see
