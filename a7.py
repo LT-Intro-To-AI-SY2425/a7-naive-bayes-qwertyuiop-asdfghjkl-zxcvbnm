@@ -130,6 +130,27 @@ class BayesClassifier:
             classification, either positive, negative or neutral
         """
         # TODO: fill me out
+        tokens = self.tokenize(text)
+
+        total_positive_probability = 0
+        total_negative_probability = 0
+
+        pos_denominator = sum(b.pos_freqs.values())
+        neg_denominator = sum(b.neg_freqs.values())
+
+        for word in tokens:
+            positive_count = self.pos_freqs.get(word, 0) + 1
+            negative_count = self.neg_freqs.get(word, 0) + 1
+
+            positive_probability = positive_count/pos_denominator
+            negative_probability = negative_count/neg_denominator
+
+            total_positive_probability += math.log(positive_probability)
+            total_negative_probability += math.log(negative_probability)
+
+        if total_positive_probability > total_negative_probability:
+            return "positive"
+        return "negative"
 
         
         # get a list of the individual tokens that occur in text
@@ -261,40 +282,39 @@ if __name__ == "__main__":
     assert a_dictionary["too"] == 1, "update_dict test 4"
     print("update_dict tests passed.")
 
-    # pos_denominator = sum(b.pos_freqs.values())
-    # neg_denominator = sum(b.neg_freqs.values())
+    pos_denominator = sum(b.pos_freqs.values())
+    neg_denominator = sum(b.neg_freqs.values())
 
-    # print("\nThese are the sums of values in the positive and negative dicitionaries.")
-    # print(f"sum of positive word counts is: {pos_denominator}")
-    # print(f"sum of negative word counts is: {neg_denominator}")
+    print("\nThese are the sums of values in the positive and negative dicitionaries.")
+    print(f"sum of positive word counts is: {pos_denominator}")
+    print(f"sum of negative word counts is: {neg_denominator}")
 
-    # print("\nHere are some sample word counts in the positive and negative dicitionaries.")
-    # print(f"count for the word 'love' in positive dictionary {b.pos_freqs['love']}")
-    # print(f"count for the word 'love' in negative dictionary {b.neg_freqs['love']}")
-    # print(f"count for the word 'terrible' in positive dictionary {b.pos_freqs['terrible']}")
-    # print(f"count for the word 'terrible' in negative dictionary {b.neg_freqs['terrible']}")
-    # print(f"count for the word 'computer' in positive dictionary {b.pos_freqs['computer']}")
-    # print(f"count for the word 'computer' in negative dictionary {b.neg_freqs['computer']}")
-    # print(f"count for the word 'science' in positive dictionary {b.pos_freqs['science']}")
-    # print(f"count for the word 'science' in negative dictionary {b.neg_freqs['science']}")
-    # print(f"count for the word 'i' in positive dictionary {b.pos_freqs['i']}")
-    # print(f"count for the word 'i' in negative dictionary {b.neg_freqs['i']}")
-    # print(f"count for the word 'is' in positive dictionary {b.pos_freqs['is']}")
-    # print(f"count for the word 'is' in negative dictionary {b.neg_freqs['is']}")
-    # print(f"count for the word 'the' in positive dictionary {b.pos_freqs['the']}")
-    # print(f"count for the word 'the' in negative dictionary {b.neg_freqs['the']}")
+    print("\nHere are some sample word counts in the positive and negative dicitionaries.")
+    print(f"count for the word 'love' in positive dictionary {b.pos_freqs['love']}")
+    print(f"count for the word 'love' in negative dictionary {b.neg_freqs['love']}")
+    print(f"count for the word 'terrible' in positive dictionary {b.pos_freqs['terrible']}")
+    print(f"count for the word 'terrible' in negative dictionary {b.neg_freqs['terrible']}")
+    print(f"count for the word 'computer' in positive dictionary {b.pos_freqs['computer']}")
+    print(f"count for the word 'computer' in negative dictionary {b.neg_freqs['computer']}")
+    print(f"count for the word 'science' in positive dictionary {b.pos_freqs['science']}")
+    print(f"count for the word 'science' in negative dictionary {b.neg_freqs['science']}")
+    print(f"count for the word 'i' in positive dictionary {b.pos_freqs['i']}")
+    print(f"count for the word 'i' in negative dictionary {b.neg_freqs['i']}")
+    print(f"count for the word 'is' in positive dictionary {b.pos_freqs['is']}")
+    print(f"count for the word 'is' in negative dictionary {b.neg_freqs['is']}")
+    print(f"count for the word 'the' in positive dictionary {b.pos_freqs['the']}")
+    print(f"count for the word 'the' in negative dictionary {b.neg_freqs['the']}")
 
-    # print("\nHere are some sample probabilities.")
-    # print(f"P('love'| pos) {(b.pos_freqs['love']+1)/pos_denominator}")
-    # print(f"P('love'| neg) {(b.neg_freqs['love']+1)/neg_denominator}")
-    # print(f"P('terrible'| pos) {(b.pos_freqs['terrible']+1)/pos_denominator}")
-    # print(f"P('terrible'| neg) {(b.neg_freqs['terrible']+1)/neg_denominator}")
+    print("\nHere are some sample probabilities.")
+    print(f"P('love'| pos) {(b.pos_freqs['love']+1)/pos_denominator}")
+    print(f"P('love'| neg) {(b.neg_freqs['love']+1)/neg_denominator}")
+    print(f"P('terrible'| pos) {(b.pos_freqs['terrible']+1)/pos_denominator}")
+    print(f"P('terrible'| neg) {(b.neg_freqs['terrible']+1)/neg_denominator}")
 
-    # # uncomment the below lines once you've implemented `classify`
-    # print("\nThe following should all be positive.")
-    # print(b.classify('I love computer science'))
-    # print(b.classify('this movie is fantastic'))
-    # print("\nThe following should all be negative.")
-    # print(b.classify('rainy days are the worst'))
-    # print(b.classify('computer science is terrible'))
-    pass
+    # uncomment the below lines once you've implemented `classify`
+    print("\nThe following should all be positive.")
+    print(b.classify('I love computer science'))
+    print(b.classify('this movie is fantastic'))
+    print("\nThe following should all be negative.")
+    print(b.classify('rainy days are the worst'))
+    print(b.classify('computer science is terrible'))
