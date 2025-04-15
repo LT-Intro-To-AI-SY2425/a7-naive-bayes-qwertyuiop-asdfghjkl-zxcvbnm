@@ -1,5 +1,5 @@
 # Ali Mostafa, Eliana Nieves
-import math, os, pickle, re, string, threading
+import math, os, pickle, re, string, threading, time
 from typing import Tuple, List, Dict
 
 def remove_punctuation(input):
@@ -7,7 +7,16 @@ def remove_punctuation(input):
         input = input.replace(char, '')
     return input
 
-training_thread_count = 32
+# thread count -> training time (seconds)
+# 1 -> 64.77351188659668
+# 2 -> 29.764976263046265
+# 4 -> 29.68605375289917
+# 8 -> 15.695228815078735
+# 32 -> 10.446215629577637
+# 64 -> 10.054329633712769
+# 128 -> 7.61386251449585
+# 256 -> 8.78291130065918
+training_thread_count = 16
 
 class BayesClassifier:
     """A simple BayesClassifier implementation
@@ -59,19 +68,15 @@ class BayesClassifier:
 
         file_count = len(files)
         files_per_thread = file_count / training_thread_count
-        files_allocated = 0
 
         training_threads = []
 
         def train_on_files(start_index, stop_index):
             for index in range(start_index, stop_index):
-                if index >= len(files):
-                    continue
-
                 file_name = files[index]
 
-                print(f"training on file {index} / {len(files)}")
-                text = self.load_file(os.path.join(self.training_data_directory, file_name))
+                # print(f"training on file {index} / {len(files)}")
+                text = self.load_file(self.training_data_directory + file_name)
                 tokens = self.tokenize(text)
 
                 if file_name.startswith(self.neg_file_prefix):
@@ -84,18 +89,19 @@ class BayesClassifier:
                     print("uh oh D:")
 
         for thread_index in range(0, training_thread_count):
-            files_allocated += files_per_thread
-            files_to_allocate = math.floor(files_allocated)
+            start_index = math.floor(thread_index * files_per_thread)
+            training_threads.append(threading.Thread(target=train_on_files, args=(start_index, math.floor(start_index + files_per_thread - 1))))
 
-            start_index = thread_index * files_to_allocate
-            training_threads.append(threading.Thread(target=train_on_files, args=(start_index, start_index + files_to_allocate)))
+        start = time.time()
 
         for thread in training_threads:
             thread.start()
         for thread in training_threads:
             thread.join()
 
-        print("saving neg and pos freqs")
+        print(f'training time: {time.time() - start}')
+
+        # print("saving neg and pos freqs")
         self.save_dict(self.neg_freqs, self.neg_filename)
         self.save_dict(self.pos_freqs, self.pos_filename)
 
