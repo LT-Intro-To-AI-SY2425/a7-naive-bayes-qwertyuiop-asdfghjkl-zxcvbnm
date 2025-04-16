@@ -16,7 +16,7 @@ def remove_punctuation(input):
 # 64 -> 10.054329633712769
 # 128 -> 7.61386251449585
 # 256 -> 8.78291130065918
-training_thread_count = 16
+training_thread_count = 1
 
 class BayesClassifier:
     """A simple BayesClassifier implementation
@@ -123,17 +123,27 @@ class BayesClassifier:
         pos_denominator = sum(b.pos_freqs.values())
         neg_denominator = sum(b.neg_freqs.values())
 
+        vocab = set(self.pos_freqs.keys()).union(set(self.neg_freqs.keys()))
+        vocab_size = len(vocab)
+
         for word in tokens:
+            if word in self.stoplist:
+                continue
+
             positive_count = self.pos_freqs.get(word, 0) + 1
             negative_count = self.neg_freqs.get(word, 0) + 1
 
-            positive_probability = positive_count/pos_denominator
-            negative_probability = negative_count/neg_denominator
+            print(positive_count)
+            print(negative_count)
+
+            positive_probability = positive_count/(pos_denominator + vocab_size)
+            negative_probability = negative_count/(neg_denominator + vocab_size)
 
             total_positive_probability += math.log(positive_probability)
             total_negative_probability += math.log(negative_probability)
 
-        print(total_positive_probability, total_negative_probability)
+        print(f"Positive score: {total_positive_probability}")
+        print(f"Negative score: {total_negative_probability}")
 
         if total_positive_probability > total_negative_probability:
             return "positive"
@@ -218,9 +228,6 @@ class BayesClassifier:
             freqs - dictionary of frequencies to update
         """
         for word in words:
-            # if word in self.stoplist:
-            #     continue
-
             word = remove_punctuation(word)
             if len(word) > 0:
                 freqs[word] = freqs.get(word, 0) + 1
@@ -276,3 +283,11 @@ if __name__ == "__main__":
     print("\nThe following should all be negative.")
     print(b.classify('rainy days are the worst'))
     print(b.classify('computer science is terrible'))
+
+    print("\nThe following is to test out the method with each groups responses")
+    print(b.classify('The world is a beautiful place.'))
+    print(b.classify('The end is nigh!'))
+    print(b.classify('Do you know what I really love? Bad things. I love bad, horrible things.'))
+
+    print(b.classify('A lovely sun illuminates happy fields of flowers waving gladly to unbeknownst passerby.'))
+    print(b.classify('I am so happy I cant stop smiling seriously'))
