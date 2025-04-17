@@ -1,22 +1,22 @@
 # Ali Mostafa, Eliana Nieves
-import math, os, pickle, re, string, threading, time
+import math
+import os
+import pickle
+import re
+import string
+import threading
+import time
 from typing import Tuple, List, Dict
+
 
 def remove_punctuation(input):
     for char in string.punctuation:
         input = input.replace(char, '')
     return input
 
-# thread count -> training time (seconds)
-# 1 -> 64.77351188659668
-# 2 -> 29.764976263046265
-# 4 -> 29.68605375289917
-# 8 -> 15.695228815078735
-# 32 -> 10.446215629577637
-# 64 -> 10.054329633712769
-# 128 -> 7.61386251449585
-# 256 -> 8.78291130065918
-training_thread_count = 1
+
+training_thread_count = 32
+
 
 class BayesClassifier:
     """A simple BayesClassifier implementation
@@ -54,17 +54,19 @@ class BayesClassifier:
             self.neg_freqs = self.load_dict(self.neg_filename)
         else:
             print("Data files not found - running training...")
-            self.train()
+            self.train_parallel()
 
-    def train(self) -> None:
+    def train_parallel(self) -> None:
         """Trains the Naive Bayes Sentiment Classifier
 
         Train here means generates `pos_freq/neg_freq` dictionaries with frequencies of
         words in corresponding positive/negative reviews
         """
-        _, __, files = next(os.walk(self.training_data_directory), (None, None, []))
+        _, __, files = next(
+            os.walk(self.training_data_directory), (None, None, []))
         if not files:
-            raise RuntimeError(f"Couldn't find path {self.training_data_directory}")
+            raise RuntimeError(
+                f"Couldn't find path {self.training_data_directory}")
 
         file_count = len(files)
         files_per_thread = file_count / training_thread_count
@@ -75,7 +77,7 @@ class BayesClassifier:
             for index in range(start_index, stop_index):
                 file_name = files[index]
 
-                # print(f"training on file {index} / {len(files)}")
+                print(f"training on file {index} / {len(files)}")
                 text = self.load_file(self.training_data_directory + file_name)
                 tokens = self.tokenize(text)
 
@@ -90,7 +92,8 @@ class BayesClassifier:
 
         for thread_index in range(0, training_thread_count):
             start_index = math.floor(thread_index * files_per_thread)
-            training_threads.append(threading.Thread(target=train_on_files, args=(start_index, math.floor(start_index + files_per_thread - 1))))
+            training_threads.append(threading.Thread(target=train_on_files, args=(
+                start_index, math.floor(start_index + files_per_thread - 1))))
 
         start = time.time()
 
@@ -101,7 +104,33 @@ class BayesClassifier:
 
         print(f'training time: {time.time() - start}')
 
-        # print("saving neg and pos freqs")
+        print("saving neg and pos freqs")
+        self.save_dict(self.neg_freqs, self.neg_filename)
+        self.save_dict(self.pos_freqs, self.pos_filename)
+
+    def train(self) -> None:
+        _, __, files = next(
+            os.walk(self.training_data_directory), (None, None, []))
+
+        if not files:
+            raise RuntimeError(
+                f"Couldn't find path {self.training_data_directory}")
+
+        for index, file_name in enumerate(files):
+            # print(f"training on file {index} / {len(files)}")
+            text = self.load_file(self.training_data_directory + file_name)
+            tokens = self.tokenize(text)
+
+            if file_name.startswith(self.neg_file_prefix):
+                # negative file :(
+                self.update_dict(tokens, self.neg_freqs)
+            elif file_name.startswith(self.pos_file_prefix):
+                # positive file :)
+                self.update_dict(tokens, self.pos_freqs)
+            else:
+                print("uh oh D:")
+
+        print("saving neg and pos freqs")
         self.save_dict(self.neg_freqs, self.neg_filename)
         self.save_dict(self.pos_freqs, self.pos_filename)
 
@@ -117,37 +146,50 @@ class BayesClassifier:
         """
         tokens = self.tokenize(text)
 
-        total_positive_probability = 0
-        total_negative_probability = 0
+        print(tokens)
 
         pos_denominator = sum(b.pos_freqs.values())
         neg_denominator = sum(b.neg_freqs.values())
 
-        vocab = set(self.pos_freqs.keys()).union(set(self.neg_freqs.keys()))
+        print(f"total positive words count: {pos_denominator}")
+        print(f"total negative words count: {neg_denominator}")
+
+        vocab = set(self.pos_freqs.keys()).union(self.neg_freqs.keys())
         vocab_size = len(vocab)
 
+        print(f"vocab size: {vocab_size}")
+
+        positive_score = 0
+        negative_score = 0
+
         for word in tokens:
+            print(f"analyzing word: {word}")
+
             if word in self.stoplist:
                 continue
 
             positive_count = self.pos_freqs.get(word, 0) + 1
             negative_count = self.neg_freqs.get(word, 0) + 1
 
-            print(positive_count)
-            print(negative_count)
+            print(f"word positive appearance count: {positive_count}")
+            print(f"word negative appearance count: {negative_count}")
 
-            positive_probability = positive_count/(pos_denominator + vocab_size)
-            negative_probability = negative_count/(neg_denominator + vocab_size)
+            positive_score += math.log(positive_count /
+                                       (pos_denominator + vocab_size))
+            negative_score += math.log(negative_count /
+                                       (neg_denominator + vocab_size))
 
-            total_positive_probability += math.log(positive_probability)
-            total_negative_probability += math.log(negative_probability)
+            print(f"word positive score: {positive_score}")
+            print(f"word negative score: {negative_score}")
 
-        print(f"Positive score: {total_positive_probability}")
-        print(f"Negative score: {total_negative_probability}")
+        print(f"Positive score: {positive_score}")
+        print(f"Negative score: {negative_score}")
 
-        if total_positive_probability > total_negative_probability:
+        if positive_score > negative_score:
             return "positive"
-        return "negative"
+        elif positive_score < negative_score:
+            return "negative"
+        return "neutral"
 
     def load_file(self, filepath: str) -> str:
         """Loads text of given file
@@ -228,16 +270,14 @@ class BayesClassifier:
             freqs - dictionary of frequencies to update
         """
         for word in words:
-            word = remove_punctuation(word)
-            if len(word) > 0:
-                freqs[word] = freqs.get(word, 0) + 1
+            freqs[word] = freqs.get(word, 0) + 1
         return freqs
 
 
 if __name__ == "__main__":
     # uncomment the below lines once you've implemented `train` & `classify`
     b = BayesClassifier()
-    a_list_of_words = ["I", "really", "like", "this", "movie", ".", "I", "hope", \
+    a_list_of_words = ["I", "really", "like", "this", "movie", ".", "I", "hope",
                        "you", "like", "it", "too"]
     a_dictionary = {}
     b.update_dict(a_list_of_words, a_dictionary)
@@ -255,20 +295,32 @@ if __name__ == "__main__":
     print(f"sum of negative word counts is: {neg_denominator}")
 
     print("\nHere are some sample word counts in the positive and negative dicitionaries.")
-    print(f"count for the word 'love' in positive dictionary {b.pos_freqs['love']}")
-    print(f"count for the word 'love' in negative dictionary {b.neg_freqs['love']}")
-    print(f"count for the word 'terrible' in positive dictionary {b.pos_freqs['terrible']}")
-    print(f"count for the word 'terrible' in negative dictionary {b.neg_freqs['terrible']}")
-    print(f"count for the word 'computer' in positive dictionary {b.pos_freqs['computer']}")
-    print(f"count for the word 'computer' in negative dictionary {b.neg_freqs['computer']}")
-    print(f"count for the word 'science' in positive dictionary {b.pos_freqs['science']}")
-    print(f"count for the word 'science' in negative dictionary {b.neg_freqs['science']}")
+    print(
+        f"count for the word 'love' in positive dictionary {b.pos_freqs['love']}")
+    print(
+        f"count for the word 'love' in negative dictionary {b.neg_freqs['love']}")
+    print(
+        f"count for the word 'terrible' in positive dictionary {b.pos_freqs['terrible']}")
+    print(
+        f"count for the word 'terrible' in negative dictionary {b.neg_freqs['terrible']}")
+    print(
+        f"count for the word 'computer' in positive dictionary {b.pos_freqs['computer']}")
+    print(
+        f"count for the word 'computer' in negative dictionary {b.neg_freqs['computer']}")
+    print(
+        f"count for the word 'science' in positive dictionary {b.pos_freqs['science']}")
+    print(
+        f"count for the word 'science' in negative dictionary {b.neg_freqs['science']}")
     print(f"count for the word 'i' in positive dictionary {b.pos_freqs['i']}")
     print(f"count for the word 'i' in negative dictionary {b.neg_freqs['i']}")
-    print(f"count for the word 'is' in positive dictionary {b.pos_freqs['is']}")
-    print(f"count for the word 'is' in negative dictionary {b.neg_freqs['is']}")
-    print(f"count for the word 'the' in positive dictionary {b.pos_freqs['the']}")
-    print(f"count for the word 'the' in negative dictionary {b.neg_freqs['the']}")
+    print(
+        f"count for the word 'is' in positive dictionary {b.pos_freqs['is']}")
+    print(
+        f"count for the word 'is' in negative dictionary {b.neg_freqs['is']}")
+    print(
+        f"count for the word 'the' in positive dictionary {b.pos_freqs['the']}")
+    print(
+        f"count for the word 'the' in negative dictionary {b.neg_freqs['the']}")
 
     print("\nHere are some sample probabilities.")
     print(f"P('love'| pos) {(b.pos_freqs['love']+1)/pos_denominator}")
@@ -287,7 +339,9 @@ if __name__ == "__main__":
     print("\nThe following is to test out the method with each groups responses")
     print(b.classify('The world is a beautiful place.'))
     print(b.classify('The end is nigh!'))
-    print(b.classify('Do you know what I really love? Bad things. I love bad, horrible things.'))
+    print(b.classify(
+        'Do you know what I really love? Bad things. I love bad, horrible things.'))
 
-    print(b.classify('A lovely sun illuminates happy fields of flowers waving gladly to unbeknownst passerby.'))
-    print(b.classify('I am so happy I cant stop smiling seriously'))
+    print(b.classify(
+        'A lovely sun illuminates happy fields of flowers waving gladly to unbeknownst passerby.'))
+    print(b.classify("I am so happy! I can't stop smiling, seriously!"))
