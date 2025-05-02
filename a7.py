@@ -339,9 +339,8 @@ if __name__ == "__main__":
     print("\nThe following is to test out the method with each groups responses")
     print(b.classify('The world is a beautiful place.'))
     print(b.classify('The end is nigh!'))
-    print(b.classify(
-        'Do you know what I really love? Bad things. I love bad, horrible things.'))
+    print(b.classify('Do you know what I really love? Bad things. I love bad, horrible things.'))
 
-    print(b.classify(
-        'A lovely sun illuminates happy fields of flowers waving gladly to unbeknownst passerby.'))
+    print(b.classify('A lovely sun illuminates happy fields of flowers waving gladly to unbeknownst passerby.'))
     print(b.classify("I am so happy! I can't stop smiling, seriously!"))
+    print(b.classify('Why do bad things happen to good people?'))
